@@ -33,22 +33,17 @@ def llm(content: str) -> List[Calendar]:
 
     load_dotenv(".env")
 
-    today = date.today()
-    today = today.strftime("%Y%m%d")
-
-    current_time = "today is {today}, {weekday}".format(today=today, weekday=get_weekday(date.today()))
-
-    content = current_time + ". " + content
-
     model = ChatOpenAI(openai_api_key=os.environ.get("OPENAI_API_KEY"), temperature=0)
 
     parser = JsonOutputParser(pydantic_object=Calendar)
 
     prompt = PromptTemplate(
-        template="Create a calendar event, ensuring that the output maintains the same language as the input. If certain details are unavailable, they can be left as blank. \n{format_instructions}\n{content}.",
-        partial_variables={"format_instructions": parser.get_format_instructions()},
-        input_variables=[content],
-    )
+        template="Create a calendar event, ensuring that the output maintains the same language as the input. If certain details are unavailable, they can be left as blank. \n{format_instructions}\n{content}. \n Current date, time and weekday are {today}, {weekday}",
+        partial_variables={
+            "format_instructions": parser.get_format_instructions(), 
+            "weekday": get_weekday(date.today()), 
+            "today": date.today().strftime("%Y%m%d")},
+        input_variables=[content])
 
     chain = prompt | model | parser
 
